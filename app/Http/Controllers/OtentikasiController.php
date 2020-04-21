@@ -8,20 +8,20 @@ class OtentikasiController extends Controller
 {
    public function index()
    {
-   	return view('welcome');
+   	return view('otentikasi.index');
    }
 
-   public function store_user()
+   public function store_user(Request $request)
    {
    	# code...
    }
 
 	public function login()
    {
-   	# code...
+   	return view('otentikasi.login');
    }
 
-   public function check_login()
+   public function check_login(Request $request)
    {
    	# code...
    }
@@ -33,20 +33,20 @@ class OtentikasiController extends Controller
 
    public function pemulihan_gambar()
    {
-   	# code...
+   	return view('otentikasi.pemulihan_gambar');
    }
 
-   public function kirim_email_pemulihan()
+   public function kirim_email_pemulihan(Request $request)
    {
    	# code...
    }
 
-   public function reset_cover()
+   public function reset_cover($code)
    {
    	# code...
    }
 
-   public function update_cover()
+   public function update_cover(Request $request)
    {
    	# code...
    }
