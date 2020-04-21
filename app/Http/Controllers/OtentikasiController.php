@@ -8,7 +8,7 @@ class OtentikasiController extends Controller
 {
    public function index()
    {
-   	# code...
+   	return view('welcome');
    }
 
    public function store_user()
