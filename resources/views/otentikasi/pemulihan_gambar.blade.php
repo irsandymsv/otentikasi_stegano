@@ -81,6 +81,7 @@
 						</span>
 					@enderror
 				</div>
+				<br>
 
 				<div class="form-wrapper">
 					<label for="tgl_lahir">Tanggal Lahir</label>

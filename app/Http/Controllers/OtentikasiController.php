@@ -6,9 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use App\User;
-use Carbon\Carbon;
 use Illuminate\Contracts\Encryption\DecryptException;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\User;
+use App\recovery_image;
+use App\Mail\recoveryImage;
 
 class OtentikasiController extends Controller
 {
@@ -197,17 +200,158 @@ class OtentikasiController extends Controller
 
    public function kirim_email_pemulihan(Request $request)
    {
-   	# code...
+   	$this->validate($request, [
+         'email' => 'required|email',
+         'tgl_lahir' => 'required'
+      ]);
+
+      $tgl_lahir = Carbon::parse($request->input('tgl_lahir'));
+      $user = User::where([
+         ['email', $request->input('email')],
+         ['tgl_lahir', $tgl_lahir]
+      ])->first();
+
+      if (is_null($user)) {
+         return redirect()->back()->with('user_not_found', 'Akun tidak ditemukan. Harap periksa kembali email dan tanggal lahir yang anda masukkan')->withInput();
+      }
+      else{
+         $recovery = recovery_image::create([
+            'user_id' => $user->id
+         ]);
+         
+         $code = encrypt($recovery->id);
+         MAil::to($request->input('email'))->send(new recoveryImage($code, $user->nama));
+
+         return redirect()->back()->with('email_send', 'Email pemulihan telah dikirimkan ke alamat email anda. Silahkan periksa kotak masuk email anda.')->withInput();
+      }
    }
 
    public function reset_cover($code)
    {
-   	# code...
+   	$timeout = false;
+      try {
+         $recovery_id = decrypt($code);
+      } catch (\Exception $e) {
+         $timeout = true;
+         Session(['error_dekripsi' => "Terjadi error, pastikan link yang anda gunakan benar."]);
+         return view('otentikasi.reset_cover', ['timeout' => $timeout]);
+      }
+      $recovery = recovery_image::findOrFail($recovery_id);
+      $selisih_waktu = Carbon::now()->diffInMinutes(Carbon::parse($recovery->created_at));
+      
+      if ($selisih_waktu > 30) {
+         $timeout = true;
+      }
+      return view('otentikasi.reset_cover', [
+         'timeout' => $timeout,
+         'code' => $code
+      ]);
    }
 
    public function update_cover(Request $request)
    {
-   	# code...
+   	$this->validate($request, [
+         "cover_photo" => "required|mimetypes:image/jpeg,image/png",
+         "password" => "required|string|max:12|min:6",
+      ]);
+
+      $code = '';
+      if (is_null($request->input('code'))) {
+         return redirect()->back()->with('error_found', 'Terjadi kesalahan. Harap buat permintaan pemulihan gambar lagi.');
+      }
+      else{
+         $code = $request->input('code');
+      }
+
+      //mendapatkan id recovery_image dan user yang terkait
+      try {
+         $recovery_id = decrypt($code); 
+      } catch (\Exception $e) {
+         return redirect()->back()->with('error_found', 'pastikan link yang anda gunakan benar. Jika tetap mengalami error, harap buat ulang permintaan pemulihan gambar cover.')->withInput();
+      }
+      $recovery = recovery_image::findOrFail($recovery_id);
+      $user = User::findOrFail($recovery->user_id);
+
+      $cover_photo = $request->file('cover_photo');
+      $ekstensi = $cover_photo->getClientOriginalExtension();
+      $image = '';
+      if ($ekstensi == "jpeg" || $ekstensi == "jpg") {
+         $image = imagecreatefromjpeg($cover_photo->path());
+      }
+      elseif ($ekstensi == "png") {
+         $image = imagecreatefrompng($cover_photo->path()); 
+      }
+
+      //Buat histogram dari $image
+      $histogram = $this->makeHistogram($image);
+
+      //Tentukan Peak dan Zero
+      $max_point = max($histogram);
+      $peak = array_search($max_point, $histogram);
+
+      $min_point = min($histogram);
+      $zero = array_search($min_point, $histogram); 
+
+      //Return back jika peak == zero
+      if ($peak == $zero) {
+         return redirect()->back()->with('error_found', 'Gambar tidak dapat digunakan, harap pilih gambar lain');
+      }
+
+      $password = $request->input('password');
+      $message = $user->email." ".$password;
+      $message_encrypt = encrypt($message); //Enkripsi kredensial (email dan password)
+      $msg_secret = $message_encrypt." ";
+      $bin_message = $this->stringToBin($msg_secret);
+      $bin_msg_len = strlen($bin_message);
+
+      // echo "msg = ".$msg_secret."<br>";
+      // echo "last 2 char : ".substr($msg_secret, -2);
+      // die();
+
+      //tentukan kapasitas image
+      $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
+      if ($min_point > 0) {
+         $overhead_len = $min_point;
+
+         if ($peak > $zero) {
+            $overhead_len += $histogram[$zero + 1];
+         }
+         else {
+            $overhead_len += $histogram[$zero - 1];
+         }
+      }
+
+      $unused_key_pixel = 0; //jmlh pixel peak yg tidak dapat digunakan utk embedding karena digunakan utk menyimpan binary key (peak n zero)
+      $yAxis=0;
+      for ($x=0; $x < 16; $x++) { 
+         $rgb = imagecolorat($image, $x, $yAxis);
+         $r = ($rgb >> 16) & 0xFF;
+         if ($r == $peak) {
+            $unused_key_pixel++;
+         }
+      }
+
+      $pure_payload = $max_point - ($overhead_len + $unused_key_pixel);
+      if ($bin_msg_len > $pure_payload) {
+         return redirect()->back()->with('error_found', 'Gambar tidak cukup untuk menampung data. Harap pilih gambar lain')->withInput();
+      }
+
+      $hash_pass = Hash::make($password);
+      $user->password = $hash_pass;
+      $user->save();
+
+      $this->penyisipan(
+         $image, 
+         $peak, 
+         $zero, 
+         $bin_message, 
+         $user->id
+      );
+
+      Auth::login($user);
+      Session(['pemulihan_sukses' => 'Password dan gambar cover anda berhasil diperbarui.']);
+      
+      return redirect()->route('dashboard');
    }
 
 
