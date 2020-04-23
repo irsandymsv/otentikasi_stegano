@@ -61,9 +61,9 @@
 	<!-- Header section -->
 	<header class="header-section">
 		<div class="container">
-			{{-- <a href="{{ route('index') }}" class="site-logo">
-				<img src="{{asset('/cloud83/img/logo.png')}}" alt="logo">
-			</a> --}}
+			<a href="{{ route('index') }}" class="site-logo">
+				<img src="{{asset('/image/fasilkom host logo 2.png')}}" alt="logo">
+			</a>
 			
 			<!-- Switch button -->
 			<div class="nav-switch">
@@ -73,7 +73,7 @@
 				<ul class="main-menu">
 					<li><a href="{{ route('index') }}">Home</a></li>
 					<li><a href="{{ route('pemulihan_gambar') }}">Pemulihan Gambar</a></li>
-					{{-- <li><a href="{{ route('test_image.index') }}">Uji Kualitas</a></li> --}}
+					<li><a href="{{ route('uji_kualitas') }}">Uji Kualitas</a></li>
 					{{-- <li><a href="blog.html">News</a></li>
 					<li><a href="contact.html">Contact</a></li> --}}
 				</ul>
