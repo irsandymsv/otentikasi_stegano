@@ -1,5 +1,5 @@
 <?php
-
+use Jenssegers\Agent\Agent;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -25,3 +25,28 @@ Route::post('/update_cover', 'OtentikasiController@update_cover')->name('update_
 
 Route::get('/uji_kualitas', 'TestController@index')->name('uji_kualitas');
 Route::post('/test', 'TestController@test')->name('test');
+
+
+//Deteksi device yang digunakan
+Route::get('/device_detect', function()
+{
+	$agent = new Agent();
+	$device = $agent->device();
+	echo "device = ".$device."<br>";
+
+	$platform = $agent->platform();
+	$platform_ver = $agent->version($platform);
+	echo "platform = ".$platform." ".$platform_ver."<br>";
+
+	$browser = $agent->browser();
+	$browser_ver = $agent->version($browser);
+	echo "browser = ".$browser." ".$browser_ver."<br>";
+
+	echo "<br>";
+	if ($agent->isDesktop()) {
+		echo "you are using DESKTOP device <br>";
+	}
+	elseif ($agent->isMobile()) {
+		echo "you are using MOBILE device <br>";
+	}
+});
