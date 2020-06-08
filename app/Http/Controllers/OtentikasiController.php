@@ -112,6 +112,8 @@ class OtentikasiController extends Controller
       );
 
       Auth::login($new_user);
+      $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
+      Session(["executionTime_register" => $executionTime]);
       return redirect()->route('dashboard');
    }
 
@@ -180,6 +182,9 @@ class OtentikasiController extends Controller
       $kredensial = explode(" ", $dekrip_pesan);
 
       if (Auth::attempt(['email' => $kredensial[0], 'password' => $kredensial[1]])) {
+         $executionTime = microtime(true) - $_SERVER['REQUEST_TIME_FLOAT'];
+         Session(["executionTime_login" => $executionTime]);
+
          return redirect()->route('dashboard');
       }
       else{
@@ -187,9 +192,10 @@ class OtentikasiController extends Controller
       }
    }
 
-   public function logout()
+   public function logout(Request $request)
    {
    	Auth::logout();
+      $request->session()->flush();
       return redirect()->route('login');
    }
 

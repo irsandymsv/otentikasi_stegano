@@ -93,7 +93,7 @@
 		<div class="container">
 			<div class="footer-nav">
 				<ul>
-					<li><a href="home.html">Home</a></li>
+					<li><a href="{{ route('index') }}">Home</a></li>
 					{{-- <li><a href="about.html">About us</a></li>
 					<li><a href="service.html">Services</a></li>
 					<li><a href="blog.html">News</a></li>

@@ -25,6 +25,10 @@
 		font-size: 16px;
 		color: #4c4c4c;
 	}
+
+	#sign_now{
+		font-size: 22px;
+	}
 </style>
 @endsection
 
@@ -42,8 +46,9 @@
 		<div class="row top-wrap">
 			<div class="col-lg-5">
 				<h2>Fasilkom Hosting</h2>
-				<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec malesuada lorem maximus mauris sceleri sque,</p>
-				<p>at rutrum nulla dictum. Ut ac ligula sapien. Suspendisse cursus faucibus finibus.</p>
+				<br>
+				<p>Web hosting tetrbaru dari Fakultas Ilmu Komputer Universitas Jember</p>
+				<p id="sign_now">Daftar Sekarang!</p>
 				<br><br>
 			</div>
 

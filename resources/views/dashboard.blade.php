@@ -14,7 +14,18 @@ Dashboard
     <div class="card mb-4">
     	<div class="card-body">
     		<h4>Selamat Datang</h4>
-    		<p>{{ Auth::user()->nama }} - Member sejak {{ Carbon\Carbon::parse(Auth::user()->created_at)->locale('id_ID')->isoFormat('D MMMM Y') }}</p> 
+    		<p>{{ Auth::user()->nama }} - Member sejak {{ Carbon\Carbon::parse(Auth::user()->created_at)->locale('id_ID')->isoFormat('D MMMM Y') }}</p>
+        @if (Session('executionTime_register'))
+          <p>
+            Waktu eksekusi proses registrasi = {{ Session('executionTime_register') }} detik
+          </p> 
+        @endif
+
+        @if (Session('executionTime_login'))
+          <p>
+            Waktu eksekusi proses login = {{ Session('executionTime_login') }} detik 
+          </p> 
+        @endif
     	</div>
     </div>
 
