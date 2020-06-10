@@ -33,21 +33,26 @@ class Controller extends BaseController
 
 	protected function makeHistogram($image)
    {
-   	$histogram = [];
+   	$histogram = array_fill(0, 256, 0);
    	$width = imagesx($image);
-    $height = imagesy($image);
-    for ($i=0; $i <= 255; $i++) { 
-      $histogram[$i] = 0;
-    }
+    	$height = imagesy($image);
 
-    for ($y=0; $y < $height; $y++) { 
-      for ($x=0; $x < $width; $x++) { 
-        $rgb = imagecolorat($image, $x, $y);
-        $r = ($rgb >> 16) & 0xFF;
-        $histogram[$r]++;
-      }
-    }
+    	for ($y=0; $y < $height; $y++) { 
+	      for ($x=0; $x < $width; $x++) { 
+	      	$rgb = imagecolorat($image, $x, $y);
+	      	$r = ($rgb >> 16) & 0xFF;
+	      	$histogram[$r]++;
+	      }
+    	}
 
-    return $histogram;
-  }
+    	return $histogram;
+  	}
+
+
+
+
+
+  	// for ($i=0; $i <= 255; $i++) {
+   // 	$histogram[$i] = 0;
+   // }
 }

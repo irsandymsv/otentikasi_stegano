@@ -54,7 +54,7 @@ class OtentikasiController extends Controller
 
       //Return back jika peak == zero
       if ($peak == $zero) {
-         return redirect()->back()->with('error_found', 'Gambar tidak dapat digunakan, harap pilih gambar lain');
+         return redirect()->back()->with('error_found', 'Gambar tidak dapat digunakan, harap pilih gambar lain')->withInput();
       }
 
       $password = $request->input('password');
@@ -430,7 +430,6 @@ class OtentikasiController extends Controller
 
       /*Simpan LSB 16 pixel pertama ke bin_message. Ganti dg bin key (max/min index)
       */
-      // echo "ganti LSB 16 pixel pertama dg binary max/min index <br>";
 
       for ($y=0; $y < 1; $y++) { 
          for ($x=0; $x < 16; $x++) { 
