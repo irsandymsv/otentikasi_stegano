@@ -242,16 +242,23 @@ class OtentikasiController extends Controller
          Session(['error_dekripsi' => "Terjadi error, pastikan link yang anda gunakan benar."]);
          return view('otentikasi.reset_cover', ['timeout' => $timeout]);
       }
+
       $recovery = recovery_image::findOrFail($recovery_id);
-      $selisih_waktu = Carbon::now()->diffInMinutes(Carbon::parse($recovery->created_at));
-      
-      if ($selisih_waktu > 30) {
-         $timeout = true;
+      if (is_null($recovery)) {
+         Session(['error_dekripsi' => "Terjadi error, pastikan link yang anda gunakan benar."]);
+         return view('otentikasi.reset_cover', ['timeout' => $timeout]);
       }
-      return view('otentikasi.reset_cover', [
-         'timeout' => $timeout,
-         'code' => $code
-      ]);
+      else{
+         $selisih_waktu = Carbon::now()->diffInMinutes(Carbon::parse($recovery->created_at));
+         
+         if ($selisih_waktu > 30) {
+            $timeout = true;
+         }
+         return view('otentikasi.reset_cover', [
+            'timeout' => $timeout,
+            'code' => $code
+         ]);
+      }
    }
 
    public function update_cover(Request $request)
@@ -309,10 +316,6 @@ class OtentikasiController extends Controller
       $msg_secret = $message_encrypt." ";
       $bin_message = $this->stringToBin($msg_secret);
       $bin_msg_len = strlen($bin_message);
-
-      // echo "msg = ".$msg_secret."<br>";
-      // echo "last 2 char : ".substr($msg_secret, -2);
-      // die();
 
       //tentukan kapasitas image
       $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
@@ -512,7 +515,7 @@ class OtentikasiController extends Controller
       $user_info = '';
 
       try {
-         /*extract max dan min index 
+         /*Ekstrak peak dan zero point dari 16 piksel pertama
          */
          $bin_key = '';
          $bin_peak = '';
