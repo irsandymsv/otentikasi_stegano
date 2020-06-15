@@ -147,6 +147,9 @@ class OtentikasiController extends Controller
 
 	public function login()
    {
+      if (Auth::check()) {
+         return redirect()->route('dashboard');
+      }
    	return view('otentikasi.login');
    }
 
@@ -220,11 +223,8 @@ class OtentikasiController extends Controller
          return redirect()->back()->with('user_not_found', 'Akun tidak ditemukan. Harap periksa kembali email dan tanggal lahir yang anda masukkan')->withInput();
       }
       else{
-         $recovery = recovery_image::create([
-            'user_id' => $user->id
-         ]);
-         
-         $code = encrypt($recovery->id);
+         $waktu_email = time()." ".$user->email;
+         $code = encrypt($waktu_email);
          MAil::to($request->input('email'))->send(new recoveryImage($code, $user->nama));
 
          return redirect()->back()->with('email_send', 'Email pemulihan telah dikirimkan ke alamat email anda. Silahkan periksa kotak masuk email anda.')->withInput();
@@ -235,29 +235,23 @@ class OtentikasiController extends Controller
    {
    	$timeout = false;
       try {
-         $recovery_id = decrypt($code);
+         $waktu_email = decrypt($code);
       } catch (\Exception $e) {
          $timeout = true;
          Session(['error_dekripsi' => "Terjadi error, pastikan link yang anda gunakan benar."]);
          return view('otentikasi.reset_cover', ['timeout' => $timeout]);
       }
 
-      $recovery = recovery_image::findOrFail($recovery_id);
-      if (is_null($recovery)) {
-         Session(['error_dekripsi' => "Terjadi error, pastikan link yang anda gunakan benar."]);
-         return view('otentikasi.reset_cover', ['timeout' => $timeout]);
+      $waktu_email = explode(" ", $waktu_email);
+      $selisih_waktu = (time() - $waktu_email[0]) / 60;
+      
+      if (ceil($selisih_waktu) > 30) {
+         $timeout = true;
       }
-      else{
-         $selisih_waktu = Carbon::now()->diffInMinutes(Carbon::parse($recovery->created_at));
-         
-         if ($selisih_waktu > 30) {
-            $timeout = true;
-         }
-         return view('otentikasi.reset_cover', [
-            'timeout' => $timeout,
-            'code' => $code
-         ]);
-      }
+      return view('otentikasi.reset_cover', [
+         'timeout' => $timeout,
+         'code' => $code
+      ]);
    }
 
    public function update_cover(Request $request)
@@ -276,14 +270,15 @@ class OtentikasiController extends Controller
          $code = $request->input('code');
       }
 
-      //mendapatkan id recovery_image dan user yang terkait
+      //dapatkan email pengguna dari $code
       try {
-         $recovery_id = decrypt($code); 
+         $waktu_email = decrypt($code); 
       } catch (\Exception $e) {
          return redirect()->back()->with('error_found', 'pastikan link yang anda gunakan benar. Jika tetap mengalami error, harap buat ulang permintaan pemulihan gambar cover.')->withInput();
       }
-      $recovery = recovery_image::findOrFail($recovery_id);
-      $user = User::findOrFail($recovery->user_id);
+
+      $waktu_email = explode(" ", $waktu_email);
+      $user = User::where('email', $waktu_email[1])->first();
 
       $cover_photo = $request->file('cover_photo');
       $ekstensi = $cover_photo->getClientOriginalExtension();
