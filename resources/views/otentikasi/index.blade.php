@@ -47,7 +47,7 @@
 			<div class="col-lg-5">
 				<h2>Fasilkom Hosting</h2>
 				<br>
-				<p>Web hosting tetrbaru dari Fakultas Ilmu Komputer Universitas Jember</p>
+				<p>Web hosting terbaru dari Fakultas Ilmu Komputer Universitas Jember</p>
 				<p id="sign_now">Daftar Sekarang!</p>
 				<br><br>
 			</div>
