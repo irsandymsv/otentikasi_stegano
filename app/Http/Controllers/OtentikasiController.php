@@ -190,7 +190,7 @@ class OtentikasiController extends Controller
          return redirect()->route('dashboard');
       }
       else{
-         return redirect()->back()->with('user_not_found', "Akun tidak ditemukan. Harap gunakan gambar cover yang anda dapat ketika registrasi.");
+         return redirect()->back()->with('user_not_found', "Akun tidak ditemukan.");
       }
    }
 
@@ -497,13 +497,11 @@ class OtentikasiController extends Controller
          $bin_key = '';
          $bin_peak = '';
          $bin_zero = '';
-         for ($y=0; $y < 1; $y++) { 
-            for ($x=0; $x < 16; $x++) { 
-               $rgb = imagecolorat($cover_photo, $x, $y);
-               $r = ($rgb >> 16) & 0xFF;
-               $bin_r = $this->integerToBin($r);
-               $bin_key .= $bin_r[strlen($bin_r) - 1];
-            }
+         for ($x=0; $x < 16; $x++) { 
+            $rgb = imagecolorat($cover_photo, $x, 0);
+            $r = ($rgb >> 16) & 0xFF;
+            $bin_r = $this->integerToBin($r);
+            $bin_key .= $bin_r[strlen($bin_r) - 1];
          }
 
          $bin_peak = substr($bin_key, 0, 8);
@@ -512,19 +510,19 @@ class OtentikasiController extends Controller
          $zero = bindec($bin_zero);
 
          //Ekstrak pesan yg disisipkan
-         if ($peak < $zero) { //jika peak di sebelah kiri zero
-            for ($y=0; $y < $height; $y++) { 
-               for ($x=0; $x < $width; $x++) { 
-                  if ($y == 0) { 
-                     if ($x >= 0 && $x < 16) {
-                        //cek apakah pixel termasuk 16 pertama, jika ya lewati
-                        continue;
-                     }
+         for ($y=0; $y < $height; $y++) { 
+            for ($x=0; $x < $width; $x++) { 
+               if ($y == 0) { 
+                  if ($x >= 0 && $x < 16) {
+                     //cek apakah pixel termasuk 16 pertama, jika ya lewati
+                     continue;
                   }
+               }
 
-                  $rgb = imagecolorat($cover_photo, $x, $y);
-                  $r = ($rgb >> 16) & 0xFF;
+               $rgb = imagecolorat($cover_photo, $x, $y);
+               $r = ($rgb >> 16) & 0xFF;
 
+               if ($peak < $zero) { //jika peak di sebelah kiri zero
                   if ($r == $peak) {
                      $bin_message .= "0";
                   }
@@ -535,21 +533,7 @@ class OtentikasiController extends Controller
                   //    $min_point++;
                   // }
                }
-            }
-         }
-         elseif ($peak > $zero){ //jika peak di sebelah kanan zero
-            for ($y=0; $y < $height; $y++) { 
-               for ($x=0; $x < $width; $x++) { 
-                  if ($y == 0) { 
-                     if ($x >= 0 && $x < 16) {
-                        //cek apakah pixel termasuk 16 pertama, jika ya lewati
-                        continue;
-                     }
-                  }
-
-                  $rgb = imagecolorat($cover_photo, $x, $y);
-                  $r = ($rgb >> 16) & 0xFF;
-
+               else{ //jika peak di sebelah kanan zero
                   if ($r == $peak) {
                      $bin_message .= "0";
                   }
@@ -561,9 +545,6 @@ class OtentikasiController extends Controller
                   // }
                }
             }
-         }
-         else{
-            return "error_cover";
          }
 
          //Ambil pesan asli dan overhead info (jika ada)
