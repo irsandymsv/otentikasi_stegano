@@ -65,17 +65,17 @@ class OtentikasiController extends Controller
       $bin_msg_len = strlen($bin_message);
 
       //tentukan kapasitas image
-      $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
-      if ($min_point > 0) {
-         $overhead_len = $min_point;
+      // $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
+      // if ($min_point > 0) {
+      //    $overhead_len = $min_point;
 
-         if ($peak > $zero) {
-            $overhead_len += $histogram[$zero + 1];
-         }
-         else {
-            $overhead_len += $histogram[$zero - 1];
-         }
-      }
+      //    if ($peak > $zero) {
+      //       $overhead_len += $histogram[$zero + 1];
+      //    }
+      //    else {
+      //       $overhead_len += $histogram[$zero - 1];
+      //    }
+      // }
 
       $unused_key_pixel = 0; //jmlh pixel peak yg tidak dapat digunakan utk penyisipan karena digunakan utk menyimpan binary key (peak n zero)
       $yAxis=0;
@@ -87,7 +87,7 @@ class OtentikasiController extends Controller
          }
       }
 
-      $pure_payload = $max_point - ($overhead_len + $unused_key_pixel);
+      $pure_payload = $max_point - $unused_key_pixel;
       if ($bin_msg_len > $pure_payload) {
          return redirect()->back()->with('error_found', 'Gambar tidak cukup untuk menampung data, harap pilih gambar lain')->withInput();
       }
@@ -374,50 +374,33 @@ class OtentikasiController extends Controller
       $bin_key = $bin_peak.$bin_zero;
 
       //Shifting
-      if ($peak < $zero) {
-         //ditambah (shift to right)
-         for ($y=0; $y < $height; $y++) { 
-            for ($x=0; $x < $width; $x++) { 
-               $rgb = imagecolorat($image, $x, $y);
-               $r = ($rgb >> 16) & 0xFF;
-               $g = ($rgb >> 8) & 0xFF;
-               $b = $rgb & 0xFF;
+      for ($y=0; $y < $height; $y++) { 
+         for ($x=0; $x < $width; $x++) { 
+            $rgb = imagecolorat($image, $x, $y);
+            $r = ($rgb >> 16) & 0xFF;
+            $g = ($rgb >> 8) & 0xFF;
+            $b = $rgb & 0xFF;
 
+            if ($peak < $zero) {
                //overhead info (ketika min_point > 0)
-               if ($r == $zero) {
-                  $bin_message .= "0";
-               }
-               elseif($r == ($zero - 1)){
-                  $bin_message .= "1";
-               }
+               // if ($r == $zero) {
+               //    $bin_message .= "0";
+               // }
+               // elseif($r == ($zero - 1)){
+               //    $bin_message .= "1";
+               // }
 
                //SHIFT
                if ($r > $peak && $r < $zero) {
+                  //ditambah (shift to right)
                   $newR = $r+1;
                   $newColor = imagecolorallocate($image, $newR, $g, $b);
                   imagesetpixel($image, $x, $y, $newColor);
                }
             }
-         }
-      }
-      else{
-         //dikurangi (shift to left)
-         for ($y=0; $y < $height; $y++) { 
-            for ($x=0; $x < $width; $x++) { 
-               $rgb = imagecolorat($image, $x, $y);
-               $r = ($rgb >> 16) & 0xFF;
-               $g = ($rgb >> 8) & 0xFF;
-               $b = $rgb & 0xFF;
-
-               //overhead info (ketika min_point > 0)
-               if ($r == $zero) {
-                  $bin_message .= "0";
-               }
-               elseif($r == ($zero + 1)){
-                  $bin_message .= "1";
-               }
-
+            else{
                if ($r < $peak && $r > $zero) {
+                  //dikurangi (shift to left)
                   $newR = $r-1;
                   $newColor = imagecolorallocate($image, $newR, $g, $b);
                   imagesetpixel($image, $x, $y, $newColor);
@@ -428,25 +411,22 @@ class OtentikasiController extends Controller
 
       /*Simpan LSB 16 pixel pertama ke bin_message. Ganti dg bin_key
       */
+      for ($x=0; $x < 16; $x++) { 
+         $rgb = imagecolorat($image, $x, 0);
+         $r = ($rgb >> 16) & 0xFF;
+         $g = ($rgb >> 8) & 0xFF;
+         $b = $rgb & 0xFF;
 
-      for ($y=0; $y < 1; $y++) { 
-         for ($x=0; $x < 16; $x++) { 
-            $rgb = imagecolorat($image, $x, $y);
-            $r = ($rgb >> 16) & 0xFF;
-            $g = ($rgb >> 8) & 0xFF;
-            $b = $rgb & 0xFF;
+         $newR = $this->integerToBin($r);
 
-            $newR = $this->integerToBin($r);
+         // simpan LSB asli di bin_message
+         $bin_message .= $newR[strlen($newR) - 1];
+         // ganti LSB dg bit dr bin_key 
+         $newR[strlen($newR) - 1] = $bin_key[$x]; 
+         $newR = bindec($newR);
 
-            // simpan LSB asli di bin_message
-            $bin_message .= $newR[strlen($newR) - 1];
-            // ganti LSB dg bit dr bin_key 
-            $newR[strlen($newR) - 1] = $bin_key[$x]; 
-            $newR = bindec($newR);
-
-            $newColor = imagecolorallocate($image, $newR, $g, $b);
-            imagesetpixel($image, $x, $y, $newColor);
-         }
+         $newColor = imagecolorallocate($image, $newR, $g, $b);
+         imagesetpixel($image, $x, 0, $newColor);
       }
 
       //penyisipan
