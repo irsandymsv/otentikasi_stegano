@@ -313,17 +313,17 @@ class OtentikasiController extends Controller
       $bin_msg_len = strlen($bin_message);
 
       //tentukan kapasitas image
-      $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
-      if ($min_point > 0) {
-         $overhead_len = $min_point;
+      // $overhead_len = 0; //jml pixel zero(jika ada) + pixel di sampingnya
+      // if ($min_point > 0) {
+      //    $overhead_len = $min_point;
 
-         if ($peak > $zero) {
-            $overhead_len += $histogram[$zero + 1];
-         }
-         else {
-            $overhead_len += $histogram[$zero - 1];
-         }
-      }
+      //    if ($peak > $zero) {
+      //       $overhead_len += $histogram[$zero + 1];
+      //    }
+      //    else {
+      //       $overhead_len += $histogram[$zero - 1];
+      //    }
+      // }
 
       $unused_key_pixel = 0; //jmlh pixel peak yg tidak dapat digunakan utk embedding karena digunakan utk menyimpan binary key (peak n zero)
       $yAxis=0;
@@ -335,7 +335,7 @@ class OtentikasiController extends Controller
          }
       }
 
-      $pure_payload = $max_point - ($overhead_len + $unused_key_pixel);
+      $pure_payload = $max_point - $unused_key_pixel;
       if ($bin_msg_len > $pure_payload) {
          return redirect()->back()->with('error_found', 'Gambar tidak cukup untuk menampung data. Harap pilih gambar lain')->withInput();
       }
