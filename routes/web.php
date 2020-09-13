@@ -26,6 +26,8 @@ Route::post('/update_cover', 'OtentikasiController@update_cover')->name('update_
 Route::get('/uji_kualitas', 'TestController@index')->name('uji_kualitas');
 Route::post('/test', 'TestController@test')->name('test');
 
+Route::get('/uji_enkripsi', 'OtentikasiController@uji_enkripsi')->name('uji_enkripsi');
+Route::post('/tes_enkripsi', 'OtentikasiController@tes_enkripsi')->name('tes_enkripsi');
 
 //Deteksi device yang digunakan
 Route::get('/device_detect', function()

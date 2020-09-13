@@ -170,7 +170,7 @@ class OtentikasiController extends Controller
       }
 
       $user_info = $this->ekstraksi($image);
-
+      // dd($user_info);
       if ($user_info == "error_cover") {
          return redirect()->back()->with('error_found', "Gambar tidak dapat digunakan. Pastikan gambar yang digunakan adalah gambar cover yang didapat ketika registrasi. Jika tetap gagal, gunakan fitur pemulihan gambar cover.");
       }
@@ -357,6 +357,78 @@ class OtentikasiController extends Controller
       
       return redirect()->route('dashboard');
    }
+
+   public function uji_enkripsi()
+   {
+      return view('test.uji_enkripsi');
+   }
+
+   public function tes_enkripsi(Request $request)
+   {
+      $cover_photo = $request->file('cover_photo');
+      $ekstensi = $cover_photo->getClientOriginalExtension();
+      $image = '';
+      if ($ekstensi == "jpeg" || $ekstensi == "jpg") {
+         $image = imagecreatefromjpeg($cover_photo->path());
+      }
+      elseif ($ekstensi == "png") {
+         $image = imagecreatefrompng($cover_photo->path()); 
+      }
+
+      //Buat histogram dari $image
+      $histogram = $this->makeHistogram($image);
+
+      //Tentukan Peak dan Zero
+      $max_point = max($histogram); //Jumlah piksel terbanyak
+      $peak = array_search($max_point, $histogram);
+
+      $min_point = min($histogram); //Jumlah piksel tersedikit
+      $zero = array_search($min_point, $histogram);
+
+      //Return back jika peak == zero
+      if ($peak == $zero) {
+         return redirect()->back()->with('error_found', 'Gambar tidak dapat digunakan, harap pilih gambar lain')->withInput();
+      }
+
+      $password = $request->input('password');
+      $message = $request->input('email')." ".$password;
+      // $message_encrypt = encrypt($message); //Enkripsi kredensial (email dan password)
+      $msg_secret = $message." ";
+      $bin_message = $this->stringToBin($msg_secret);
+      $bin_msg_len = strlen($bin_message);
+
+      $unused_key_pixel = 0; //jmlh pixel peak yg tidak dapat digunakan utk penyisipan karena digunakan utk menyimpan binary key (peak n zero)
+      $yAxis=0;
+      for ($x=0; $x < 16; $x++) { 
+         $rgb = imagecolorat($image, $x, $yAxis);
+         $r = ($rgb >> 16) & 0xFF;
+         if ($r == $peak) {
+            $unused_key_pixel++;
+         }
+      }
+
+      $pure_payload = $max_point - $unused_key_pixel;
+      if ($bin_msg_len > $pure_payload) {
+         return redirect()->back()->with('error_found', 'Gambar tidak cukup untuk menampung data, harap pilih gambar lain')->withInput();
+      }
+
+      $this->penyisipan(
+         $image, 
+         $peak, 
+         $zero, 
+         $bin_message, 
+         999
+      );
+
+      ob_end_clean();
+      $headers = array(
+         'Content-Type: image/png',
+      );
+      return response()->download(storage_path('app/public/user_cover/cover_photo-999.png'), 'citra_stego_uji.png', $headers)->deleteFileAfterSend();
+   }
+
+
+
 
 
 
@@ -552,15 +624,22 @@ class OtentikasiController extends Controller
          $pesan_asli = '';
          // $overhead_info = '';
          // $key_LSB_asli = '';
+         // $space_count = 0;
          
          for ($i=0; ($i + 7) < $message_len; $i += 8) { 
             $bin_part = substr($bin_message, $i, 8);
             $char = pack('H*', dechex(bindec($bin_part)));
 
             if ($char == " ") {
-               /* setelah space adalah overhead info atau 
-               LSB 16 piksel pertama*/
+               /* [setelah space adalah overhead info atau 
+               LSB 16 piksel pertama] -> utk pengembalian citra asli*/
+               
+               // $space_count++;
+               // if ($space_count == 2) {
+               // }
+
                break;
+               
 
                /*[Tahap mendapatkan overhead info dan LSB]*/
             }
